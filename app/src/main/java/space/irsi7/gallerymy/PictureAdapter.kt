@@ -1,5 +1,6 @@
 package space.irsi7.gallerymy
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.job.JobWorkItem
 import android.content.Context
 import android.content.Intent
@@ -14,9 +15,13 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat.startActivity
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.*
 import space.irsi7.gallerymy.R
@@ -31,49 +36,35 @@ import kotlin.coroutines.CoroutineContext
 // Класс адаптера для привязки и показа данных в RecyclerView
 class PictureAdapter internal constructor(context: Context?, items: Array<File>?) :
     RecyclerView.Adapter<PictureAdapter.ViewHolder?>() {
-    // Локальный массив для хранения файлов
-    private var items: ArrayList<File>
 
-    // Ассоциативный массив (словарь) - массив с ключами и значениями, в отличии от обычного массива
-    // в котором ключи это числовые индексы позиции элементов, в HashMap ключом может быть объект любого класса
+    var items: ArrayList<File>
+
     private val thumbs: HashMap<String, Bitmap> = HashMap()
 
-    // Контекст в котором заружен RecyclerView к которому прикреплен этот адаптер
     private var context: Context
 
 
     // Функция для обновления списка для показа новых добавленных файлов
     fun updateDataSet(items: Array<File>) {
-        // Обновить массив, используя конвертацию обычного массива в ArrayList
         this.items = ArrayList((items).asList())
-        // Вызвать функцию для привязки элементов из нового источника к RecyclerView
         notifyDataSetChanged()
     }
 
     // Вложенный класс класса FileAdapter для хранения объектов элементов RecyclerView
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        // Ссылка на TextView в котором выводится заголовок файла
+
         var title: TextView
-
-        // Ссылка на ImageView для показа миниатюры изображения или видео
         var thumb: ImageView
-        //var rename: Button
 
-        // Конструктор класса для присвоения переменным соответствующих объектов из файла макета
         init {
-            // Необходимо вызвать суперкласс ViewHolder-а и передать корневой View
-            // Получить ссылку к виджетам в корневом View
             title = itemView.findViewById(R.id.fileTitle)
             thumb = itemView.findViewById(R.id.thumb)
-            //rename = itemView.findViewById(R.id.rename)
+
         }
     }
 
-    // Функция onCreateViewHolder вызывается при первом создании объекта для хранения элементов списка
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        // Получаем View объект созданный на основе написанной структуры макета в xml файле file_item.xml
         val v: View = LayoutInflater.from(context).inflate(R.layout.picture_item, parent, false)
-        // Создаётся новый объект класса ViewHolder и ему передаётся объект View полученный из файла макета
         return ViewHolder(v)
     }
 
@@ -89,7 +80,6 @@ class PictureAdapter internal constructor(context: Context?, items: Array<File>?
             )
 
             var thumb: Bitmap
-
             val job: Job = GlobalScope.launch { withContext(Dispatchers.IO) {
                 thumb =
                     ThumbnailUtils.extractThumbnail(
@@ -102,41 +92,55 @@ class PictureAdapter internal constructor(context: Context?, items: Array<File>?
                     thumbs[items[position].absolutePath] = thumb
                     holder.thumb.setImageBitmap(thumb)
 
-                    holder.itemView.setOnClickListener {
-                        val fullScreen = Intent(context, FullscreenActivity::class.java)
-                        fullScreen.putExtra("path", items[position].absolutePath)
-                        context.startActivity(fullScreen)
+
+//                ActivityResultContracts.StartActivityForResult(bind).launch(intent)
+//                ActivityResult(fullScreen, Constants.RENAME_FILE_REQUEST)
+                    }
                     }
                 }
-                // Если type == 0 значит надо сгенерировать миниатюру для изображения
-                //thumb = context.contentResolver.loadThumbnail(
-                //content-uri, Size(256, 256), null)
-            }
 
+//            val activityLauncher = ActivityResultContracts.StartActivityForResult(mynameContract()) { result ->
+//                // используем result
+//            }
+        holder.itemView.setOnClickListener {
+            val fullScreen = Intent(context, FullscreenActivity::class.java)
+            fullScreen.putExtra("path", items[position].absolutePath)
+            fullScreen.putExtra("position", position)
+
+            startActivity(context, fullScreen, null)
         }
+
     }
 
-
-    // Функция для переименования файла
     fun renameFile(newName: String, position: Int) {
-        // Создать новый пустой файл с новым именем переименованного файла
         val file =
             File(items[position].parentFile.absolutePath.toString() + "/" + newName)
-        // Переименовать выбранный файл и присвоить новое имя
         if (items[position].renameTo(file)) {
-            // Если получилось переименовать тогда удалить из массива старый файл
             items.removeAt(position)
-            // Добавить новый файл на место удаленного файла
             items.add(position, file)
-            // Сообщить адаптеру что инфрмация изменилась
             notifyItemChanged(position)
         }
     }
 
-    // Получить количество элементов в списке
     override fun getItemCount(): Int {
         return items.size
     }
+
+//    class MyRenameContract : ActivityResultContract<String, Int?>() {
+//
+//        override fun createIntent(context: Context, input: String?): Intent {
+//            return Intent(context, RenameActivity::class.java)
+//        }
+//
+//        override fun parseResult(resultCode: Int, intent: Intent?): Int? = when {
+//            resultCode != Activity.RESULT_OK -> null
+//            else -> intent?.getIntExtra(Constants.RENAME_FILE_REQUEST, 1)
+//        }
+//
+//        override fun getSynchronousResult(context: Context, input: String?): SynchronousResult<Int?>? {
+//            return if (input.isNullOrEmpty()) SynchronousResult(1) else null
+//        }
+//    }
 
 //    // Поток для генерации миниатюр изображений
 //    class GenerateThumb(path: String, iv: ImageView): CoroutineScope {
@@ -191,6 +195,7 @@ class PictureAdapter internal constructor(context: Context?, items: Array<File>?
 
     // Конструктор класса PictureAdapter где получаются значения
     // из вызываюшего кода и присваиваются локальным переменным класса
+
     init {
         this.items = ArrayList((items)!!.asList())
         this.context = context!!

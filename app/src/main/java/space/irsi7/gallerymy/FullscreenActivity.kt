@@ -1,6 +1,5 @@
 package space.irsi7.gallerymy
 
-import androidx.appcompat.app.AppCompatActivity
 import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 import android.os.Build
@@ -12,7 +11,7 @@ import android.view.View
 import android.view.WindowInsets
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import space.irsi7.gallerymy.databinding.ActivityFullscreenTestBinding
 
 /**
@@ -93,6 +92,13 @@ class FullscreenActivity : AppCompatActivity() {
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
         binding.btnRename.setOnTouchListener(delayHideTouchListener)
+        binding.btnRename.setOnClickListener(){
+            val dialog = RenameDialogFragment()
+            val args = Bundle()
+            args.putString("path", path);
+            dialog.arguments = args
+            dialog.show(supportFragmentManager, "custom")
+        }
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
