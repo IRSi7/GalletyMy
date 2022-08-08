@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GalleryMy</string>
+    <string name="dialog_message">Для дальнейшей работы с GalleryMy Вам необходимо предоставить приложению разрешения на работы с медиафайлами на вашем устройстве.</string>
+    <string name="give_permission">Предоставить разрешение</string>
+    <string name="exit">Выйти</string>
+</resources>
